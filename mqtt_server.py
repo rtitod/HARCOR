@@ -1,18 +1,15 @@
 import paho.mqtt.client as mqtt
 import json
 import ssl
-import subprocess
+import time
 
 broker_address = "127.0.0.1"
 port = 1883
 topic = "edge"
 humidity = -999
-limits = 2
+bounds = 0
 
-#requiere tener instalado mosquitto
-#trabajo en proceso
-
-# Envia mensajes a amazon
+# Envia mensajes a Amazon
 def publish_to_amazon(payload):
     amazon_broker_address = "a85vkpsrzp7kv-ats.iot.us-west-2.amazonaws.com"
     amazon_topic = "sensor/humidity"
@@ -20,29 +17,25 @@ def publish_to_amazon(payload):
     cert_file = "./e57e2e5c45c0a82b8c5b80f45a0eb67c55aba7b541cc869fb758858559c083ab-certificate.pem.crt"
     key_file = "./e57e2e5c45c0a82b8c5b80f45a0eb67c55aba7b541cc869fb758858559c083ab-private.pem.key"
 
-    mosquitto_pub_cmd = [
-        "mosquitto_pub",
-        "-h", amazon_broker_address,
-        "-p", "8883",
-        "--cafile", ca_file,
-        "--cert", cert_file,
-        "--key", key_file,
-        "-t", amazon_topic,
-        "-m", payload,
-        "-d"
-    ]
+    client_publish = mqtt.Client()
+    client_publish.tls_set(ca_file, certfile=cert_file, keyfile=key_file, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2, ciphers=None)
 
     try:
-        subprocess.run(mosquitto_pub_cmd, check=True)
+        client_publish.connect(amazon_broker_address, 8883, 60)
+        client_publish.loop_start()
+        client_publish.publish(amazon_topic, payload, qos=1)
         print("Mensaje enviado a Amazon")
-    except subprocess.CalledProcessError as e:
-        print(f"Error al enviar el mensaje a Amazon: {e}")
+    except Exception as e:
+        print("Error al enviar el mensaje a Amazon: {}".format(e))
+    finally:
+        time.sleep(2)
+        client_publish.disconnect()
 
 # Callback que se ejecuta cuando se recibe un mensaje en el tópico suscrito
-def on_message(client, userdata, message):
+def on_message(client, userdata, msg):
     global humidity 
-    payload = message.payload.decode("utf-8")
-    print(f"Mensaje recibido en el tópico {message.topic}: {payload}")
+    payload = msg.payload.decode("utf-8")
+    print("Mensaje recibido en el tópico {}: {}".format(msg.topic, payload))
     
     try:
         json_data = json.loads(payload)
@@ -51,14 +44,14 @@ def on_message(client, userdata, message):
             print("enviando mensaje")
             humidity = medida
             publish_to_amazon(payload)
-        elif medida > humidity + limits or medida < humidity - limits:  # Ajuste en la condición
+        elif medida > humidity + bounds or medida < humidity - bounds:
             print("enviando mensaje")
             humidity = medida
             publish_to_amazon(payload)
         else:
             print("mensaje dentro de los limites")
 
-    except json.JSONDecodeError:
+    except ValueError:
         print("Este no es un mensaje JSON válido")
 
 
@@ -69,7 +62,7 @@ client.connect(broker_address, port, 60)
 client.subscribe(topic)
 
 try:
-    print(f"Conectado al servidor MQTT. Esperando mensajes en el tópico {topic}...")
+    print("Conectado al servidor MQTT. Esperando mensajes en el tópico {}...".format(topic))
     client.loop_forever()
 
 except KeyboardInterrupt:
