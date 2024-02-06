@@ -5,7 +5,8 @@ import time
 
 broker_address = "127.0.0.1"
 port = 1883
-topic = "edge"
+topicsensor = "edge/sensor"
+topicsartifact = "edge/artifact"
 humidity = -999
 bounds = 0
 
@@ -49,7 +50,7 @@ def on_message(client, userdata, msg):
             humidity = medida
             publish_to_amazon(payload)
         else:
-            print("mensaje dentro de los limites")
+            print("mensaje dentro de los limites. No se enviará")
 
     except ValueError:
         print("Este no es un mensaje JSON válido")
@@ -59,10 +60,10 @@ client = mqtt.Client()
 client.on_message = on_message
 
 client.connect(broker_address, port, 60)
-client.subscribe(topic)
+client.subscribe(topicsensor)
 
 try:
-    print("Conectado al servidor MQTT. Esperando mensajes en el tópico {}...".format(topic))
+    print("Conectado al servidor MQTT. Esperando mensajes en el tópico {}...".format(topicsensor))
     client.loop_forever()
 
 except KeyboardInterrupt:
