@@ -9,7 +9,7 @@ import time
 
 broker_address = "127.0.0.1"
 port = 1883
-topicsartifact = "edge/artifact"
+topicsartifact = "edge/tap"
 amazon_broker_address = "a85vkpsrzp7kv-ats.iot.us-west-2.amazonaws.com"
 amazon_topic_artifact = "artifact/tap"
 ca_file = "./AmazonRootCA1.pem"
