@@ -10,7 +10,6 @@ import time
 broker_address = "127.0.0.1"
 port = 1883
 topicsensor = "edge/sensor"
-topicsartifact = "edge/artifact"
 humidity = -999
 bounds = 0
 
