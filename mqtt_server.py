@@ -1,3 +1,7 @@
+#este script usa python3
+#ejecute los siguientes comandos en consola antes de iniciar este script
+#export PYTHONIOENCODING=utf8
+
 import paho.mqtt.client as mqtt
 import json
 import ssl
@@ -19,7 +23,7 @@ def publish_to_amazon(payload):
     key_file = "./e57e2e5c45c0a82b8c5b80f45a0eb67c55aba7b541cc869fb758858559c083ab-private.pem.key"
 
     client_publish = mqtt.Client()
-    client_publish.tls_set(ca_file, certfile=cert_file, keyfile=key_file, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2, ciphers=None)
+    client_publish.tls_set(ca_file, certfile=cert_file, keyfile=key_file, cert_reqs=ssl.CERT_NONE, tls_version=ssl.PROTOCOL_TLSv1_2, ciphers=None)
 
     try:
         client_publish.connect(amazon_broker_address, 8883, 60)
@@ -32,11 +36,11 @@ def publish_to_amazon(payload):
         time.sleep(2)
         client_publish.disconnect()
 
-# Callback que se ejecuta cuando se recibe un mensaje en el tópico suscrito
+# Callback que se ejecuta cuando se recibe un mensaje en el topico suscrito
 def on_message(client, userdata, msg):
     global humidity 
     payload = msg.payload.decode("utf-8")
-    print("Mensaje recibido en el tópico {}: {}".format(msg.topic, payload))
+    print("Mensaje recibido en el topico {}: {}".format(msg.topic, payload))
     
     try:
         json_data = json.loads(payload)
@@ -50,10 +54,10 @@ def on_message(client, userdata, msg):
             humidity = medida
             publish_to_amazon(payload)
         else:
-            print("mensaje dentro de los limites. No se enviará")
+            print("mensaje dentro de los limites. No se enviara")
 
     except ValueError:
-        print("Este no es un mensaje JSON válido")
+        print("Este no es un mensaje JSON valido")
 
 
 client = mqtt.Client()
@@ -63,7 +67,7 @@ client.connect(broker_address, port, 60)
 client.subscribe(topicsensor)
 
 try:
-    print("Conectado al servidor MQTT. Esperando mensajes en el tópico {}...".format(topicsensor))
+    print("Conectado al servidor MQTT. Esperando mensajes en el topico {}...".format(topicsensor))
     client.loop_forever()
 
 except KeyboardInterrupt:
